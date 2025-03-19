@@ -9,7 +9,7 @@ procedure parse(
     source_type smallint
   , number      integer
   , key         varchar(8191)      character set UTF8
-  , value       blob sub_type text character set UTF8
+  , value_      blob sub_type text character set UTF8
   , value_type  smallint
 );
 
@@ -29,17 +29,17 @@ function decode(
 ;
 
 function append(
-    json  blob sub_type text character set UTF8
-  , key   varchar(8191)      character set UTF8
-  , value blob sub_type text character set UTF8
-)returns  blob sub_type text character set UTF8
+    json   blob sub_type text character set UTF8
+  , key    varchar(8191)      character set UTF8
+  , value_ blob sub_type text character set UTF8
+)returns   blob sub_type text character set UTF8
 ;
 
 function put(
-    json  blob sub_type text character set UTF8
-  , key   varchar(8191)      character set UTF8
-  , value blob sub_type text character set UTF8
-)returns  blob sub_type text character set UTF8
+    json   blob sub_type text character set UTF8
+  , key    varchar(8191)      character set UTF8
+  , value_ blob sub_type text character set UTF8
+)returns   blob sub_type text character set UTF8
 ;
 
 end^
@@ -54,7 +54,7 @@ procedure parse(
     source_type smallint
   , number      integer
   , key         varchar(8191)      character set UTF8
-  , value       blob sub_type text character set UTF8
+  , value_      blob sub_type text character set UTF8
   , value_type  smallint
 )
 external name
@@ -101,10 +101,10 @@ engine
 ;
 
 function append(
-    json  blob sub_type text character set UTF8
-  , key   varchar(8191)      character set UTF8
-  , value blob sub_type text character set UTF8
-)returns  blob sub_type text character set UTF8
+    json   blob sub_type text character set UTF8
+  , key    varchar(8191)      character set UTF8
+  , value_ blob sub_type text character set UTF8
+)returns   blob sub_type text character set UTF8
 external name
     'fb_json!append'
 engine
@@ -112,10 +112,10 @@ engine
 ;
 
 function put(
-    json  blob sub_type text character set UTF8
-  , key   varchar(8191)      character set UTF8
-  , value blob sub_type text character set UTF8
-)returns  blob sub_type text character set UTF8
+    json   blob sub_type text character set UTF8
+  , key    varchar(8191)      character set UTF8
+  , value_ blob sub_type text character set UTF8
+)returns   blob sub_type text character set UTF8
 external name
     'fb_json!put'
 engine
