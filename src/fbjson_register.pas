@@ -50,6 +50,7 @@ function append(
     json   blob sub_type text character set UTF8
   , key    varchar(8191)      character set UTF8
   , value_ blob sub_type text character set UTF8
+  , type_  smallint
 )returns   blob sub_type text character set UTF8
 ;
 
@@ -57,6 +58,7 @@ function put(
     json   blob sub_type text character set UTF8
   , key    varchar(8191)      character set UTF8
   , value_ blob sub_type text character set UTF8
+  , type_  smallint
 )returns   blob sub_type text character set UTF8
 ;
 
@@ -122,6 +124,7 @@ function append(
     json   blob sub_type text character set UTF8
   , key    varchar(8191)      character set UTF8
   , value_ blob sub_type text character set UTF8
+  , type_  smallint
 )returns   blob sub_type text character set UTF8
 external name
     'fb_json!append'
@@ -133,6 +136,7 @@ function put(
     json   blob sub_type text character set UTF8
   , key    varchar(8191)      character set UTF8
   , value_ blob sub_type text character set UTF8
+  , type_  smallint
 )returns   blob sub_type text character set UTF8
 external name
     'fb_json!put'
