@@ -60,23 +60,27 @@ Converts JSON string into common string. I.e. unquoted it and clear inner escape
 ## function append
 
 	function append(
-	    json   string  -- JSON to be enchanced
-	  , key    string  -- new pair key 
-	  , value_ string  -- new pair (item) value
-	)returns   string; -- enchanced JSON 
+	    json   string   -- JSON to be enchanced
+	  , key    string   -- new pair key 
+	  , value_ string   -- new pair (item) value
+	  , type_  smallint -- value type
+	)returns   string;  -- enchanced JSON 
 
 	
 Appends a new pair or item to the JSON string. The ***json*** must be an object or an array or null or empty. If null or empty new object or array is created depending on key presents.
+
+If ***value*** is not conform ***type*** it is ignored.
 
 Note! You can use this function to add multiple pairs with the same key. The JSON standard does not require the key to be unique.
 
 ## function put
 
 	function put(
-	    json   string  -- JSON object to be modified
-	  , key    string  -- pair key 
-	  , value_ string  -- new pair value
-	)returns   string; -- modified JSON object
+	    json   string   -- JSON object to be modified
+	  , key    string   -- pair key 
+	  , value_ string   -- new pair value
+	  , type_  smallint -- value type
+	)returns   string;  -- modified JSON object
 
 Updates JSON object pair or inserts new pair if not found. The ***json*** must be an object or null or empty. If null or empty new object is created. The ***key*** must not be null or empty.
 
@@ -201,6 +205,7 @@ Append pairs to JSON object:
             null
           , 'a'
           , 'b'
+          , 4
         )
       from
         rdb$database
@@ -215,6 +220,7 @@ Append pairs to JSON object:
             '{"a":"b"}'
           , 'x'
           , 'y'
+          , 4
         )
       from
         rdb$database
@@ -231,6 +237,7 @@ Set pair value in JSON object:
             '{"a":"b","x":"y"}'
           , 'x'
           , 'z'
+          , 4
         )
       from
         rdb$database
