@@ -60,11 +60,11 @@ Converts JSON string into common string. I.e. unquoted it and clear inner escape
 ## function append
 
 	function append(
-	    json   string   -- JSON to be enchanced
+	    json   string   -- JSON to be enhanced
 	  , key    string   -- new pair key 
 	  , value_ string   -- new pair (item) value
 	  , type_  smallint -- value type
-	)returns   string;  -- enchanced JSON 
+	)returns   string;  -- enhanced JSON 
 
 	
 Appends a new pair or item to the JSON string. The ***json*** must be an object or an array or null or empty. If null or empty new object or array is created depending on key presents.
