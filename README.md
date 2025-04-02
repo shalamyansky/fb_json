@@ -11,62 +11,62 @@ Routines are assembled into package ***json***. Pseudotype ***string*** marks an
 
 ## procedure *parse*
 
-		procedure parse(
-		    json        string    -- JSON to be parsed
-		)returns(
-		    source_type smallint  -- source JSON entity type 
-		  , number      integer   -- order number of item (pair) started from 1
-		  , key         string    -- pair key / null for others
-		  , value_      string    -- item (pair) value 
-		  , value_type  smallint  -- item (pair) value JSON entity type
-		);
+        procedure parse(
+            json        string    -- JSON to be parsed
+        )returns(
+            source_type smallint  -- source JSON entity type 
+          , number      integer   -- order number of item (pair) started from 1
+          , key         string    -- pair key / null for others
+          , value_      string    -- item (pair) value 
+          , value_type  smallint  -- item (pair) value JSON entity type
+        );
 
-		JSON entity types are:
-		 0 - not a JSON entity
-		 1 - null
-		 2 - bool
-		 3 - number
-		 4 - string
-		 5 - pair
-		 6 - object
-		 7 - array
+        JSON entity types are:
+         0 - not a JSON entity
+         1 - null
+         2 - bool
+         3 - number
+         4 - string
+         5 - pair
+         6 - object
+         7 - array
 
 This selective procedure returns a set of pairs or items, depending on the source type (object or array). For simple sources (null, bool, number, string) it returns single record.
 
 ## function json_type
 
-	function json_type(
-	    json_type smallint
-	)returns      varchar(6);
+    function json_type(
+        json_type smallint
+    )returns      varchar(6);
 
 Auxiliary PSQL function for viewing a string description of a type.
 
 ## function encode
 
-	function encode(
-	    str  string
-	)returns string;
+    function encode(
+        str  string
+    )returns string;
   
 Converts string into JSON string. I.e. quoted it, escapes inner quotas etc.
 
 ## function decode
 
-	function decode(
-	    str  string
-	)returns string;
+    function decode(
+        str  string
+    )returns string;
   
 Converts JSON string into common string. I.e. unquoted it and clear inner escapes.
 
 ## function append
 
-	function append(
-	    json   string   -- JSON to be enhanced
-	  , key    string   -- new pair key 
-	  , value_ string   -- new pair (item) value
-	  , type_  smallint -- value type
-	)returns   string;  -- enhanced JSON 
+    function append(
+        json   string   -- JSON to be enhanced
+      , key    string   -- new pair key 
+      , value_ string   -- new pair (item) value
+      , type_  smallint -- value type
+    )returns   string;  -- enhanced JSON 
 
-	
+    
 Appends a new pair or item to the JSON string. The ***json*** must be an object or an array or null or empty. If null or empty new object or array is created depending on key presents.
 
 If ***value*** is not conform ***type*** it is ignored.
@@ -75,12 +75,12 @@ Note! You can use this function to add multiple pairs with the same key. The JSO
 
 ## function put
 
-	function put(
-	    json   string   -- JSON object to be modified
-	  , key    string   -- pair key 
-	  , value_ string   -- new pair value
-	  , type_  smallint -- value type
-	)returns   string;  -- modified JSON object
+    function put(
+        json   string   -- JSON object to be modified
+      , key    string   -- pair key 
+      , value_ string   -- new pair value
+      , type_  smallint -- value type
+    )returns   string;  -- modified JSON object
 
 Updates JSON object pair or inserts new pair if not found. The ***json*** must be an object or null or empty. If null or empty new object is created. The ***key*** must not be null or empty.
 
@@ -246,4 +246,3 @@ Set pair value in JSON object:
     PUT
     ==================
     {"a":"b","x":"z"}
-    
