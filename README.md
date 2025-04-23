@@ -84,6 +84,17 @@ Note! You can use this function to add multiple pairs with the same key. The JSO
 
 Updates JSON object pair or inserts new pair if not found. The ***json*** must be an object or null or empty. If null or empty new object is created. The ***key*** must not be null or empty.
 
+If ***type*** does not match ***value*** (e.g. ***type=0*** ) the pair is removed.
+
+## function remove
+
+    function remove(
+        json   string   -- JSON object to be modified
+      , key    string   -- pair key 
+    )returns   string;  -- modified JSON object
+
+Removes pair from JSON object if found.
+
 
 ## Limitations
 
@@ -112,7 +123,7 @@ If you get code or part of code please keep my name and a link [here](https://gi
 
 ## Examples
 
-Parse JSON object:
+**Parse JSON object:**
 
     select
           json.json_type( j.source_type ) as json_type
@@ -144,7 +155,7 @@ Parse JSON object:
     
 Note: strings returned dequoted (decoded).
 
-Parse JSON array:
+**Parse JSON array:**
 
     select
           json.json_type( j.source_type ) as json_type
@@ -174,7 +185,7 @@ Parse JSON array:
     array           5  <null>   {"a":"b"} object
     array           6  <null>   [1,2,3]   array
 
-Encode string for JSON:
+**Encode string for JSON:**
 
     select
         json.encode( '{ "a" : "b" }' )
@@ -186,7 +197,7 @@ Encode string for JSON:
     ====================
     "{ \"a\" : \"b\" }"
 
-Decode JSON string:
+**Decode JSON string:**
 
     select
         json.decode( '"{ \"a\" : \"b\" }"' )
@@ -198,7 +209,7 @@ Decode JSON string:
     ====================
     { "a" : "b" }
 
-Append pairs to JSON object:
+**Append pairs to JSON object:**
 
     select
         json.append(
@@ -230,7 +241,7 @@ Append pairs to JSON object:
     ==================
     {"a":"b","x":"y"}
 
-Set pair value in JSON object:
+**Set pair value in JSON object:**
 
     select
         json.put(
@@ -246,3 +257,18 @@ Set pair value in JSON object:
     PUT
     ==================
     {"a":"b","x":"z"}
+
+**Remove pair from JSON object:**
+
+    select
+        json.remove(
+            '{"a":"b","x":"y"}'
+          , 'x'
+        )
+      from
+        rdb$database
+    ;
+
+    REMOVE
+    ==========
+    {"a":"b"}
