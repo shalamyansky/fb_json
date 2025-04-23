@@ -1,8 +1,10 @@
 SET TERM ^ ;
 
 CREATE OR ALTER package JSON
-AS
+as
 begin
+
+--Dummy package for OS without fb_json module
 
 procedure parse(
     json        varchar(8191)                         character set UTF8
@@ -79,11 +81,14 @@ procedure parse(
   , value_      varchar(8191)                         character set UTF8
   , value_type  smallint
 )
-external name
-    'fb_json!parse'
-engine
-    udr
-;
+--external name
+--    'fb_json!parse'
+--engine
+--    udr
+--;
+as
+begin
+end
 
 procedure parse_blob(
     json        blob sub_type text segment size 16384 character set UTF8
@@ -94,11 +99,14 @@ procedure parse_blob(
   , value_      blob sub_type text segment size 16384 character set UTF8
   , value_type  smallint
 )
-external name
-    'fb_json!parse'
-engine
-    udr
-;
+--external name
+--    'fb_json!parse'
+--engine
+--    udr
+--;
+as
+begin
+end
 
 function json_type(
     json_type smallint
@@ -124,21 +132,27 @@ function encode(
     str blob sub_type text segment size 16384 character set UTF8
 )returns
         blob sub_type text segment size 16384 character set UTF8
-external name
-    'fb_json!encode'
-engine
-    udr
-;
+--external name
+--    'fb_json!encode'
+--engine
+--    udr
+--;
+as
+begin
+end
 
 function decode(
     str blob sub_type text segment size 16384 character set UTF8
 )returns
         blob sub_type text segment size 16384 character set UTF8
-external name
-    'fb_json!decode'
-engine
-    udr
-;
+--external name
+--    'fb_json!decode'
+--engine
+--    udr
+--;
+as
+begin
+end
 
 function append(
     json   blob sub_type text segment size 16384 character set UTF8
@@ -146,11 +160,14 @@ function append(
   , value_ blob sub_type text segment size 16384 character set UTF8
   , type_  smallint
 )returns   blob sub_type text segment size 16384 character set UTF8
-external name
-    'fb_json!append'
-engine
-    udr
-;
+--external name
+--    'fb_json!append'
+--engine
+--    udr
+--;
+as
+begin
+end
 
 function put(
     json   blob sub_type text segment size 16384 character set UTF8
@@ -158,21 +175,27 @@ function put(
   , value_ blob sub_type text segment size 16384 character set UTF8
   , type_  smallint
 )returns   blob sub_type text segment size 16384 character set UTF8
-external name
-    'fb_json!put'
-engine
-    udr
-;
+--external name
+--    'fb_json!put'
+--engine
+--    udr
+--;
+as
+begin
+end
 
 function remove(
     json   blob sub_type text character set UTF8
   , key    varchar(8191)      character set UTF8
 )returns   blob sub_type text character set UTF8
-external name
-    'fb_json!remove'
-engine
-    udr
-;
+--external name
+--    'fb_json!remove'
+--engine
+--    udr
+--;
+as
+begin
+end
 
 end
 ^

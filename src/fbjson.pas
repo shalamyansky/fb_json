@@ -129,6 +129,20 @@ TPutFunction = class( TBwrFunction )
     procedure execute( AStatus:IStatus; AContext:IExternalContext; AInMsg:POINTER; AOutMsg:POINTER ); override;
 end;{ TPutFunction }
 
+TRemoveFunctionFactory = class( TBwrFunctionFactory )
+  public
+    function newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalFunction; override;
+end;{ TRemoveFunctionFactory }
+
+TRemoveFunction = class( TBwrFunction )
+  const
+    INPUT_FIELD_JSON    = 0;
+    INPUT_FIELD_KEY     = 1;
+    OUTPUT_FIELD_RESULT = 0;
+  public
+    procedure execute( AStatus:IStatus; AContext:IExternalContext; AInMsg:POINTER; AOutMsg:POINTER ); override;
+end;{ TRemoveFunction }
+
 
 implementation
 
@@ -210,7 +224,9 @@ begin
             end;
         end;
         JSON_NUMBER : begin
-            Result := TJSonNumber.Create( Value );
+            if( Trim( Value ) <> '' )then begin
+                Result := TJSonNumber.Create( Value );
+            end;
         end;
         JSON_STRING : begin
             Result := TJSonString.Create( Value );
@@ -230,7 +246,7 @@ begin
     end;
 end;{ CreateJsonValue }
 
-function Encode( S:UnicodeString ):UnicodeString;
+function encode( S:UnicodeString ):UnicodeString;
 var
     JsonString : TJSonString;
 begin
@@ -244,9 +260,9 @@ begin
             FreeAndNil( JsonString );
         end;
     end;
-end;{ Decode }
+end;{ encode }
 
-function Decode( S:UnicodeString ):UnicodeString;
+function decode( S:UnicodeString ):UnicodeString;
 var
     JsonString : TJSonString;
     JsonValue  : TJSonValue;
@@ -261,9 +277,9 @@ begin
             FreeAndNil( JsonValue );
         end;
     end;
-end;{ Decode }
+end;{ decode }
 
-function Append( Json, Key, Value : UnicodeString; ValueType : SMALLINT ):UnicodeString;
+function append( Json, Key, Value : UnicodeString; ValueType : SMALLINT ):UnicodeString;
 var
     JsonValue, ChildValue  : TJSonValue;
 begin
@@ -300,7 +316,7 @@ begin
     finally
         FreeAndNil( JsonValue );
     end;
-end;{ Append }
+end;{ append }
 
 function put( Json, Key, Value : UnicodeString; ValueType : SMALLINT ):UnicodeString;
 var
@@ -334,11 +350,28 @@ begin
             end else begin
                 FreeAndNil( ChildValue );
             end;
+        end else if( JsonValue is TJSonObject )then begin
+            TJSonObject( JsonValue ).RemovePair( Key );
+            Result := ToString( JsonValue );
         end;
     finally
         FreeAndNil( JsonValue );
     end;
 end;{ put }
+
+function remove( Json, Key : UnicodeString ):UnicodeString;
+var
+    JsonValue : TJSonValue;
+begin
+    Result := Json;
+    try
+        JsonValue := TJsonValue.ParseJSONValue( Json );
+        TJSonObject( JsonValue ).RemovePair( Key );
+        Result := ToString( JsonValue );
+    finally
+        FreeAndNil( JsonValue );
+    end;
+end;{ remove }
 
 
 { TParseProcedureFactory }
@@ -579,6 +612,33 @@ begin
 
     ResultOk := RoutineContext.WriteOutputString( AStatus, TPutFunction.OUTPUT_FIELD_RESULT, Result, ResultNull );
 end;{ TPutFunction.execute }
+
+{ TRemoveFunction }
+
+function TRemoveFunctionFactory.newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalFunction;
+begin
+    Result := TPutFunction.create( AMetadata );
+end;{ TRemoveFunctionFactory.newItem }
+
+procedure TRemoveFunction.execute( AStatus:IStatus; AContext:IExternalContext; aInMsg:POINTER; aOutMsg:POINTER );
+var
+    Json,     Key,     Result     : UnicodeString;
+    JsonNull, KeyNull, ResultNull : WORDBOOL;
+    JsonOk,   KeyOk,   ResultOk   : BOOLEAN;
+begin
+    inherited execute( AStatus, AContext, aInMsg, aOutMsg );
+    System.Finalize( Json   );
+    System.Finalize( Result );
+    ResultNull := TRUE;
+    ResultOk   := FALSE;
+    JsonOk     := RoutineContext.ReadInputString(   AStatus, TRemoveFunction.INPUT_FIELD_JSON,    Json,   JsonNull   );
+    KeyOk      := RoutineContext.ReadInputString(   AStatus, TRemoveFunction.INPUT_FIELD_KEY,     Key,    KeyNull    );
+
+    Result     := remove( Json, Key );
+    ResultNull := ( Result = '' );
+
+    ResultOk   := RoutineContext.WriteOutputString( AStatus, TRemoveFunction.OUTPUT_FIELD_RESULT, Result, ResultNull );
+end;{ TRemoveFunction.execute }
 
 
 procedure InitProc;

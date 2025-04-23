@@ -62,6 +62,12 @@ function put(
 )returns   blob sub_type text character set UTF8
 ;
 
+function remove(
+    json   blob sub_type text character set UTF8
+  , key    varchar(8191)      character set UTF8
+)returns   blob sub_type text character set UTF8
+;
+
 end^
 
 recreate package body json
@@ -144,6 +150,16 @@ engine
     udr
 ;
 
+function remove(
+    json   blob sub_type text character set UTF8
+  , key    varchar(8191)      character set UTF8
+)returns   blob sub_type text character set UTF8
+external name
+    'fb_json!remove'
+engine
+    udr
+;
+
 end^
 
 set term ;^
@@ -177,6 +193,7 @@ begin
     AUdrPlugin.registerFunction(  AStatus, 'decode', fbjson.TDecodeFunctionFactory.Create() );
     AUdrPlugin.registerFunction(  AStatus, 'append', fbjson.TAppendFunctionFactory.Create() );
     AUdrPlugin.registerFunction(  AStatus, 'put',    fbjson.TPutFunctionFactory.Create()    );
+    AUdrPlugin.registerFunction(  AStatus, 'remove', fbjson.TRemoveFunctionFactory.Create() );
 
     theirUnloadFlag := AUnloadFlagLocal;
     Result          := @myUnloadFlag;

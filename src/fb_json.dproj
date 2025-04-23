@@ -3,12 +3,12 @@
         <ProjectGuid>{430C3B72-44B7-4227-AEAC-CFA8BF116594}</ProjectGuid>
         <MainSource>fb_json.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <TargetedPlatforms>131</TargetedPlatforms>
         <AppType>Library</AppType>
         <FrameworkType>None</FrameworkType>
         <ProjectVersion>20.1</ProjectVersion>
-        <Platform Condition="'$(Platform)'==''">Win64</Platform>
+        <Platform Condition="'$(Platform)'==''">Linux64</Platform>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -116,20 +116,20 @@
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <DCC_ExeOutput>..\bin\win32</DCC_ExeOutput>
         <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-        <VerInfo_Keys>CompanyName=BWR;FileDescription=JSON support Firebird UDR module;FileVersion=1.0.2.0;InternalName=;LegalCopyright=Shalamyansky M.A. (c) 2025;LegalTrademarks=;OriginalFilename=fb_json.dll;ProductName=fb_json (32-bit);ProductVersion=1.0.2.0;Comments=;ProgramID=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=BWR;FileDescription=JSON support Firebird UDR module;FileVersion=1.0.3.0;InternalName=;LegalCopyright=Shalamyansky M.A. (c) 2025;LegalTrademarks=;OriginalFilename=fb_json.dll;ProductName=fb_json (32-bit);ProductVersion=1.0.3.0;Comments=;ProgramID=</VerInfo_Keys>
         <DCC_DcuOutput>..\dcu\win32</DCC_DcuOutput>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
         <VerInfo_MinorVer>0</VerInfo_MinorVer>
-        <VerInfo_Release>2</VerInfo_Release>
+        <VerInfo_Release>3</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
         <DCC_ExeOutput>..\bin\win64</DCC_ExeOutput>
         <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
-        <VerInfo_Keys>CompanyName=BWR;FileDescription=JSON support Firebird UDR module;FileVersion=1.0.2.0;InternalName=;LegalCopyright=Shalamyansky M.A. (c) 2025;LegalTrademarks=;OriginalFilename=fb_json.dll;ProductName=fb_json (64-bit);ProductVersion=1.0.2.0;Comments=;ProgramID=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=BWR;FileDescription=JSON support Firebird UDR module;FileVersion=1.0.3.0;InternalName=;LegalCopyright=Shalamyansky M.A. (c) 2025;LegalTrademarks=;OriginalFilename=fb_json.dll;ProductName=fb_json (64-bit);ProductVersion=1.0.3.0;Comments=;ProgramID=</VerInfo_Keys>
         <DCC_DcuOutput>..\dcu\win64</DCC_DcuOutput>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
         <VerInfo_MinorVer>0</VerInfo_MinorVer>
-        <VerInfo_Release>2</VerInfo_Release>
+        <VerInfo_Release>3</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
@@ -138,14 +138,14 @@
         <DCC_DebugInformation>0</DCC_DebugInformation>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-        <VerInfo_Keys>CompanyName=BWR;FileDescription=JSON support Firebird UDR module;FileVersion=1.0.1.0;InternalName=;LegalCopyright=Shalamyansky M.A. (c) 2025;LegalTrademarks=;OriginalFilename=fb_json.dll;ProductName=fb_json (32-bit);ProductVersion=1.0.2.0;Comments=;ProgramID=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=BWR;FileDescription=JSON support Firebird UDR module;FileVersion=1.0.3.0;InternalName=;LegalCopyright=Shalamyansky M.A. (c) 2025;LegalTrademarks=;OriginalFilename=fb_json.dll;ProductName=fb_json (32-bit);ProductVersion=1.0.3.0;Comments=;ProgramID=</VerInfo_Keys>
         <VerInfo_MinorVer>0</VerInfo_MinorVer>
-        <VerInfo_Release>1</VerInfo_Release>
+        <VerInfo_Release>3</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-        <VerInfo_Keys>CompanyName=BWR;FileDescription=JSON support Firebird UDR module;FileVersion=1.0.2.0;InternalName=;LegalCopyright=Shalamyansky M.A. (c) 2025;LegalTrademarks=;OriginalFilename=fb_json.dll;ProductName=fb_json (64-bit);ProductVersion=1.0.2.0;Comments=;ProgramID=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=BWR;FileDescription=JSON support Firebird UDR module;FileVersion=1.0.3.0;InternalName=;LegalCopyright=Shalamyansky M.A. (c) 2025;LegalTrademarks=;OriginalFilename=fb_json.dll;ProductName=fb_json (64-bit);ProductVersion=1.0.3.0;Comments=;ProgramID=</VerInfo_Keys>
         <VerInfo_MinorVer>0</VerInfo_MinorVer>
-        <VerInfo_Release>2</VerInfo_Release>
+        <VerInfo_Release>3</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
@@ -159,23 +159,23 @@
         <DCC_OutputDependencies>true</DCC_OutputDependencies>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-        <VerInfo_Keys>CompanyName=BWR;FileDescription=JSON support Firebird UDR module;FileVersion=1.0.2.0;InternalName=;LegalCopyright=Shalamyansky M.A. (c) 2025;LegalTrademarks=;OriginalFilename=fb_json.dll;ProductName=fb_json (32-bit, debug);ProductVersion=1.0.2.0;Comments=;ProgramID=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=BWR;FileDescription=JSON support Firebird UDR module;FileVersion=1.0.3.0;InternalName=;LegalCopyright=Shalamyansky M.A. (c) 2025;LegalTrademarks=;OriginalFilename=fb_json.dll;ProductName=fb_json (32-bit, debug);ProductVersion=1.0.3.0;Comments=;ProgramID=</VerInfo_Keys>
         <DCC_UnitSearchPath>C:\Program Files (x86)\D29\3d\FastMM5;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <VerInfo_MinorVer>0</VerInfo_MinorVer>
         <DCC_Define>FastMM;$(DCC_Define)</DCC_Define>
-        <VerInfo_Release>2</VerInfo_Release>
+        <VerInfo_Release>3</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <DCC_ExeOutput>C:\Program Files\Firebird50\plugins\udr\</DCC_ExeOutput>
         <Debugger_RunParams>-a</Debugger_RunParams>
         <Debugger_HostApplication>C:\Program Files\Firebird50\firebird.exe</Debugger_HostApplication>
-        <VerInfo_Keys>CompanyName=BWR;FileDescription=JSON support Firebird UDR module;FileVersion=1.0.2.0;InternalName=;LegalCopyright=Shalamyansky M.A. (c) 2023-2025;LegalTrademarks=;OriginalFilename=fb_json.dll;ProductName=fb_json (64-bit, debug);ProductVersion=1.0.2.0;Comments=;ProgramID=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=BWR;FileDescription=JSON support Firebird UDR module;FileVersion=1.0.3.0;InternalName=;LegalCopyright=Shalamyansky M.A. (c) 2023-2025;LegalTrademarks=;OriginalFilename=fb_json.dll;ProductName=fb_json (64-bit, debug);ProductVersion=1.0.3.0;Comments=;ProgramID=</VerInfo_Keys>
         <VerInfo_MinorVer>0</VerInfo_MinorVer>
         <DCC_UnitSearchPath>C:\Program Files (x86)\D29\3d\FastMM5;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <Debugger_IncludeSystemVars>true</Debugger_IncludeSystemVars>
         <DCC_Define>FastMM;$(DCC_Define)</DCC_Define>
         <Debugger_EnvVars>FIREBIRD_LOCK=C:\ProgramData\firebird\50\lock;$(Debugger_EnvVars)</Debugger_EnvVars>
-        <VerInfo_Release>2</VerInfo_Release>
+        <VerInfo_Release>3</VerInfo_Release>
     </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">
