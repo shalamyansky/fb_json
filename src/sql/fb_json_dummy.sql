@@ -7,22 +7,22 @@ begin
 --Dummy package for OS without fb_json module
 
 procedure parse(
-    json        varchar(8191)                         character set UTF8
+    json        varchar(8191)      character set UTF8
 )returns(
     source_type smallint
   , number      integer
-  , key         varchar(8191)                         character set UTF8
-  , value_      varchar(8191)                         character set UTF8
+  , key         varchar(8191)      character set UTF8
+  , value_      varchar(8191)      character set UTF8
   , value_type  smallint
 );
 
 procedure parse_blob(
-    json        blob sub_type text segment size 16384 character set UTF8
+    json        blob sub_type text character set UTF8
 )returns(
     source_type smallint
   , number      integer
-  , key         varchar(8191)                         character set UTF8
-  , value_      blob sub_type text segment size 16384 character set UTF8
+  , key         varchar(8191)      character set UTF8
+  , value_      blob sub_type text character set UTF8
   , value_type  smallint
 );
 
@@ -33,37 +33,51 @@ function json_type(
 ;
 
 function encode(
-    str blob sub_type text segment size 16384 character set UTF8
+    str varchar(8191) character set UTF8
 )returns
-        blob sub_type text segment size 16384 character set UTF8
+        varchar(8191) character set UTF8
 ;
 
 function decode(
-    str blob sub_type text segment size 16384 character set UTF8
+    str varchar(8191) character set UTF8
 )returns
-        blob sub_type text segment size 16384 character set UTF8
+        varchar(8191) character set UTF8
 ;
 
 function append(
-    json   blob sub_type text segment size 16384 character set UTF8
-  , key    varchar(8191)                         character set UTF8
-  , value_ blob sub_type text segment size 16384 character set UTF8
+    json   blob sub_type text character set UTF8
+  , key    varchar(8191)      character set UTF8
+  , value_ blob sub_type text character set UTF8
   , type_  smallint
-)returns   blob sub_type text segment size 16384 character set UTF8
+)returns   blob sub_type text character set UTF8
 ;
 
 function put(
-    json   blob sub_type text segment size 16384 character set UTF8
-  , key    varchar(8191)                         character set UTF8
-  , value_ blob sub_type text segment size 16384 character set UTF8
+    json   blob sub_type text character set UTF8
+  , key    varchar(8191)      character set UTF8
+  , value_ blob sub_type text character set UTF8
   , type_  smallint
-)returns   blob sub_type text segment size 16384 character set UTF8
+)returns   blob sub_type text character set UTF8
 ;
 
 function remove(
     json   blob sub_type text character set UTF8
   , key    varchar(8191)      character set UTF8
 )returns   blob sub_type text character set UTF8
+;
+
+function array_to_object(
+    json       blob sub_type text character set UTF8
+  , key_name   varchar(8191)      character set UTF8
+  , value_name varchar(8191)      character set UTF8
+)returns       blob sub_type text character set UTF8
+;
+
+function object_to_array(
+    json       blob sub_type text character set UTF8
+  , key_name   varchar(8191)      character set UTF8
+  , value_name varchar(8191)      character set UTF8
+)returns       blob sub_type text character set UTF8
 ;
 
 end^
@@ -73,12 +87,12 @@ as
 begin
 
 procedure parse(
-    json        varchar(8191)                         character set UTF8
+    json        varchar(8191)      character set UTF8
 )returns(
     source_type smallint
   , number      integer
-  , key         varchar(8191)                         character set UTF8
-  , value_      varchar(8191)                         character set UTF8
+  , key         varchar(8191)      character set UTF8
+  , value_      varchar(8191)      character set UTF8
   , value_type  smallint
 )
 --external name
@@ -91,12 +105,12 @@ begin
 end
 
 procedure parse_blob(
-    json        blob sub_type text segment size 16384 character set UTF8
+    json        blob sub_type text character set UTF8
 )returns(
     source_type smallint
   , number      integer
-  , key         varchar(8191)                         character set UTF8
-  , value_      blob sub_type text segment size 16384 character set UTF8
+  , key         varchar(8191)      character set UTF8
+  , value_      blob sub_type text character set UTF8
   , value_type  smallint
 )
 --external name
@@ -129,9 +143,9 @@ begin
 end
 
 function encode(
-    str blob sub_type text segment size 16384 character set UTF8
+    str varchar(8191) character set UTF8
 )returns
-        blob sub_type text segment size 16384 character set UTF8
+        varchar(8191) character set UTF8
 --external name
 --    'fb_json!encode'
 --engine
@@ -142,9 +156,9 @@ begin
 end
 
 function decode(
-    str blob sub_type text segment size 16384 character set UTF8
+    str varchar(8191) character set UTF8
 )returns
-        blob sub_type text segment size 16384 character set UTF8
+        varchar(8191) character set UTF8
 --external name
 --    'fb_json!decode'
 --engine
@@ -155,11 +169,11 @@ begin
 end
 
 function append(
-    json   blob sub_type text segment size 16384 character set UTF8
-  , key    varchar(8191)                         character set UTF8
-  , value_ blob sub_type text segment size 16384 character set UTF8
+    json   blob sub_type text character set UTF8
+  , key    varchar(8191)      character set UTF8
+  , value_ blob sub_type text character set UTF8
   , type_  smallint
-)returns   blob sub_type text segment size 16384 character set UTF8
+)returns   blob sub_type text character set UTF8
 --external name
 --    'fb_json!append'
 --engine
@@ -170,11 +184,11 @@ begin
 end
 
 function put(
-    json   blob sub_type text segment size 16384 character set UTF8
-  , key    varchar(8191)                         character set UTF8
-  , value_ blob sub_type text segment size 16384 character set UTF8
+    json   blob sub_type text character set UTF8
+  , key    varchar(8191)      character set UTF8
+  , value_ blob sub_type text character set UTF8
   , type_  smallint
-)returns   blob sub_type text segment size 16384 character set UTF8
+)returns   blob sub_type text character set UTF8
 --external name
 --    'fb_json!put'
 --engine
@@ -190,6 +204,34 @@ function remove(
 )returns   blob sub_type text character set UTF8
 --external name
 --    'fb_json!remove'
+--engine
+--    udr
+--;
+as
+begin
+end
+
+function array_to_object(
+    json       blob sub_type text character set UTF8
+  , key_name   varchar(8191)      character set UTF8
+  , value_name varchar(8191)      character set UTF8
+)returns       blob sub_type text character set UTF8
+--external name
+--    'fb_json!array_to_object'
+--engine
+--    udr
+--;
+as
+begin
+end
+
+function object_to_array(
+    json       blob sub_type text character set UTF8
+  , key_name   varchar(8191)      character set UTF8
+  , value_name varchar(8191)      character set UTF8
+)returns       blob sub_type text character set UTF8
+--external name
+--    'fb_json!object_to_array'
 --engine
 --    udr
 --;

@@ -95,6 +95,46 @@ If ***type*** does not match ***value*** (e.g. ***type=0*** ) the pair is remove
 
 Removes pair from JSON object if found.
 
+## function array_to_object
+
+    function array_to_object(
+        json       string   -- JSON array to be converted
+      , key_name   string   -- key field name 
+      , value_name string   -- value field name
+    )returns       string;  -- JSON object
+
+This function accepts array like
+
+	[
+	    { "name": "propertyName1", "value": "propertyValue2" }
+	  , { "name": "propertyName2", "value": "propertyValue2" }
+	]
+	  key_name = 'name', value_name = 'value'	
+
+and converts it into object like  
+
+	{
+	    "propertyName1": "propertyValue2"
+	  , "propertyName2": "propertyValue2"
+	}
+
+## function object_to_array
+
+    function object_to_array(
+        json       string   -- JSON array to be converted
+      , key_name   string   -- key field name
+      , value_name string   -- value field name
+    )returns       string;  -- JSON object
+
+Parses any JSON object onto array like
+
+	[
+	    { "name": "propertyName1", "value": "propertyValue2" }
+	  , { "name": "propertyName2", "value": "propertyValue2" }
+	]
+	  key_name = 'name', value_name = 'value'	
+.
+
 
 ## Limitations
 
@@ -272,3 +312,35 @@ Note: strings returned dequoted (decoded).
     REMOVE
     ==========
     {"a":"b"}
+
+**Convert name/value array into object:**
+
+    select
+        json.array_to_object(
+            '[ {"name":"a","value":"x"}, {"name":"b","value":"y"} ]'
+          , 'name'
+          , 'value'
+        )
+      from
+        rdb$database
+    ;
+
+    ARRAY_TO_OBJECT
+    =================
+    {"a":"x","b":"y"}
+
+**Convert object into name/value array:**
+
+    select
+        json.object_to_array(
+            '{"a":"x","b":"y"}'
+          , 'name'
+          , 'value'
+        )
+      from
+        rdb$database
+    ;
+
+    OBJECT_TO_ARRAY
+    ======================================================
+    [ {"name":"a","value":"x"}, {"name":"b","value":"y"} ]

@@ -63,6 +63,7 @@ TParseResultSet = class( TBwrResultSet )
     procedure ReleaseDoc;
 end;{ TParseResultSet }
 
+
 { TEncodeFunction }
 
 TEncodeFunctionFactory = class( TBwrFunctionFactory )
@@ -78,6 +79,7 @@ TEncodeFunction = class( TBwrFunction )
     procedure execute( AStatus:IStatus; AContext:IExternalContext; AInMsg:POINTER; AOutMsg:POINTER ); override;
 end;{ TEncodeFunction }
 
+
 { TDecodeFunction }
 
 TDecodeFunctionFactory = class( TBwrFunctionFactory )
@@ -92,6 +94,7 @@ TDecodeFunction = class( TBwrFunction )
   public
     procedure execute( AStatus:IStatus; AContext:IExternalContext; AInMsg:POINTER; AOutMsg:POINTER ); override;
 end;{ TDecodeFunction }
+
 
 { TAppendFunction }
 
@@ -111,6 +114,7 @@ TAppendFunction = class( TBwrFunction )
     procedure execute( AStatus:IStatus; AContext:IExternalContext; AInMsg:POINTER; AOutMsg:POINTER ); override;
 end;{ TAppendFunction }
 
+
 { TPutFunction }
 
 TPutFunctionFactory = class( TBwrFunctionFactory )
@@ -129,6 +133,9 @@ TPutFunction = class( TBwrFunction )
     procedure execute( AStatus:IStatus; AContext:IExternalContext; AInMsg:POINTER; AOutMsg:POINTER ); override;
 end;{ TPutFunction }
 
+
+{ TRemoveFunction }
+
 TRemoveFunctionFactory = class( TBwrFunctionFactory )
   public
     function newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalFunction; override;
@@ -144,8 +151,50 @@ TRemoveFunction = class( TBwrFunction )
 end;{ TRemoveFunction }
 
 
+{ TArrayToObjectFunction }
+
+TArrayToObjectFunctionFactory = class( TBwrFunctionFactory )
+  public
+    function newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalFunction; override;
+end;{ TArrayToObjectFunctionFactory }
+
+TArrayToObjectFunction = class( TBwrFunction )
+  const
+    INPUT_FIELD_JSON       = 0;
+    INPUT_FIELD_KEY_NAME   = 1;
+    INPUT_FIELD_VALUE_NAME = 2;
+    OUTPUT_FIELD_RESULT    = 0;
+  public
+    procedure execute( AStatus:IStatus; AContext:IExternalContext; AInMsg:POINTER; AOutMsg:POINTER ); override;
+end;{ TArrayToObjectFunction }
+
+{ TObjectToArrayFunction }
+
+TObjectToArrayFunctionFactory = class( TBwrFunctionFactory )
+  public
+    function newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalFunction; override;
+end;{ TArrayToObjectFunctionFactory }
+
+TObjectToArrayFunction = class( TBwrFunction )
+  const
+    INPUT_FIELD_JSON       = 0;
+    INPUT_FIELD_KEY_NAME   = 1;
+    INPUT_FIELD_VALUE_NAME = 2;
+    OUTPUT_FIELD_RESULT    = 0;
+  public
+    procedure execute( AStatus:IStatus; AContext:IExternalContext; AInMsg:POINTER; AOutMsg:POINTER ); override;
+end;{ TObjectToArrayFunction }
+
+
 implementation
 
+function Clone( Value:TJSONValue ):TJSONValue;
+begin
+    Result := nil;
+    if( ( Value <> nil ) and ( Value is TJSONValue ) )then begin
+        Result := TJSONValue( Value.Clone );
+    end;
+end;{ Clone }
 
 function GetJsonType( Value:TJSONAncestor ):SMALLINT;
 begin
@@ -372,6 +421,76 @@ begin
         FreeAndNil( JsonValue );
     end;
 end;{ remove }
+
+function array_to_object( Json, KeyName, ValueName : UnicodeString ):UnicodeString;
+var
+    JsonValue, Item, KeyJson, ValueJson : TJSonValue;
+    JsonArray  : TJSonArray absolute JsonValue;
+    i          : LONGINT;
+    JsonResult : TJsonObject;
+begin
+    Result     := '';
+    JsonValue  := nil;
+    JsonResult := nil;
+    try
+        JsonValue := TJsonValue.ParseJSONValue( Json );
+        if( ( JsonValue <> nil ) and ( JsonValue is TJsonArray ) )then begin
+            JsonResult := TJsonObject.Create;
+            for i := 0 to JsonArray.Count - 1 do begin
+                Item := JsonArray.Items[ i ];
+                if( ( Item <> nil ) and ( Item is TJsonObject ) )then begin
+                    KeyJson := TJsonObject( Item ).GetValue( KeyName );
+                    if( ( KeyJson <> nil ) and ( KeyJson is TJsonString ) )then begin
+                        ValueJson := TJsonObject( Item ).GetValue( ValueName );
+                        JsonResult.AddPair( TJsonString( KeyJson ).Value, Clone( ValueJson ) );
+                    end;
+                end;
+            end;
+            Result := ToString( JsonResult );
+        end;
+    finally
+        FreeAndNil( JsonResult );
+        FreeAndNil( JsonValue  );
+    end;
+end;{ array_to_object }
+
+function object_to_array( Json, KeyName, ValueName : UnicodeString ):UnicodeString;
+var
+    JsonValue, ValueJson : TJSonValue;
+    JsonObject : TJSonObject absolute JsonValue;
+    Item       : TJsonObject;
+    Pair       : TJsonPair;
+    i          : LONGINT;
+    KeyJson    : TJsonString;
+    JsonResult : TJsonArray;
+begin
+    Result     := '';
+    JsonValue  := nil;
+    JsonResult := nil;
+    try
+        JsonValue := TJsonValue.ParseJSONValue( Json );
+        if( ( JsonValue <> nil ) and ( JsonValue is TJsonObject ) )then begin
+            JsonResult := TJsonArray.Create;
+            for i := 0 to JsonObject.Count - 1 do begin
+                Pair := JsonObject.Pairs[ i ];
+                if( ( Pair <> nil ) and ( Pair is TJsonPair ) )then begin
+                    KeyJson := Pair.JsonString;
+                    if( KeyJson <> nil )then begin
+                        ValueJson := Pair.JsonValue;
+                        Item := TJsonObject.Create;
+                        Item.AddPair( KeyName,   Clone( KeyJson )   );
+                        Item.AddPair( ValueName, Clone( ValueJson ) );
+                        JsonResult.Add( Item );
+                    end;
+                end;
+            end;
+            Result := ToString( JsonResult );
+        end;
+    finally
+        FreeAndNil( JsonResult );
+        FreeAndNil( JsonValue  );
+    end;
+end;{ object_to_array }
 
 
 { TParseProcedureFactory }
@@ -613,11 +732,12 @@ begin
     ResultOk := RoutineContext.WriteOutputString( AStatus, TPutFunction.OUTPUT_FIELD_RESULT, Result, ResultNull );
 end;{ TPutFunction.execute }
 
+
 { TRemoveFunction }
 
 function TRemoveFunctionFactory.newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalFunction;
 begin
-    Result := TPutFunction.create( AMetadata );
+    Result := TRemoveFunction.create( AMetadata );
 end;{ TRemoveFunctionFactory.newItem }
 
 procedure TRemoveFunction.execute( AStatus:IStatus; AContext:IExternalContext; aInMsg:POINTER; aOutMsg:POINTER );
@@ -639,6 +759,64 @@ begin
 
     ResultOk   := RoutineContext.WriteOutputString( AStatus, TRemoveFunction.OUTPUT_FIELD_RESULT, Result, ResultNull );
 end;{ TRemoveFunction.execute }
+
+
+{ TArrayToObjectFunction }
+
+function TArrayToObjectFunctionFactory.newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalFunction;
+begin
+    Result := TArrayToObjectFunction.create( AMetadata );
+end;{ TArrayToObjectFunctionFactory.newItem }
+
+procedure TArrayToObjectFunction.execute( AStatus:IStatus; AContext:IExternalContext; aInMsg:POINTER; aOutMsg:POINTER );
+var
+    Json,     KeyName, ValueName, Result     : UnicodeString;
+    JsonNull, KeyNull, ValueNull, ResultNull : WORDBOOL;
+    JsonOk,   KeyOk,   ValueOk,   ResultOk   : BOOLEAN;
+begin
+    inherited execute( AStatus, AContext, aInMsg, aOutMsg );
+    System.Finalize( Json   );
+    System.Finalize( Result );
+    ResultNull := TRUE;
+    ResultOk   := FALSE;
+    JsonOk     := RoutineContext.ReadInputString( AStatus, TArrayToObjectFunction.INPUT_FIELD_JSON,       Json,      JsonNull  );
+    KeyOk      := RoutineContext.ReadInputString( AStatus, TArrayToObjectFunction.INPUT_FIELD_KEY_NAME,   KeyName,   KeyNull   );
+    ValueOk    := RoutineContext.ReadInputString( AStatus, TArrayToObjectFunction.INPUT_FIELD_VALUE_NAME, ValueName, ValueNull );
+
+    Result     := array_to_object( Json, KeyName, ValueName );
+    ResultNull := ( Result = '' );
+
+    ResultOk   := RoutineContext.WriteOutputString( AStatus, TArrayToObjectFunction.OUTPUT_FIELD_RESULT, Result, ResultNull );
+end;{ TArrayToObjectFunction.execute }
+
+
+{ TObjectToArrayFunction }
+
+function TObjectToArrayFunctionFactory.newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalFunction;
+begin
+    Result := TObjectToArrayFunction.create( AMetadata );
+end;{ TObjectToArrayFunctionFactory.newItem }
+
+procedure TObjectToArrayFunction.execute( AStatus:IStatus; AContext:IExternalContext; aInMsg:POINTER; aOutMsg:POINTER );
+var
+    Json,     KeyName, ValueName, Result     : UnicodeString;
+    JsonNull, KeyNull, ValueNull, ResultNull : WORDBOOL;
+    JsonOk,   KeyOk,   ValueOk,   ResultOk   : BOOLEAN;
+begin
+    inherited execute( AStatus, AContext, aInMsg, aOutMsg );
+    System.Finalize( Json   );
+    System.Finalize( Result );
+    ResultNull := TRUE;
+    ResultOk   := FALSE;
+    JsonOk     := RoutineContext.ReadInputString( AStatus, TObjectToArrayFunction.INPUT_FIELD_JSON,       Json,      JsonNull  );
+    KeyOk      := RoutineContext.ReadInputString( AStatus, TObjectToArrayFunction.INPUT_FIELD_KEY_NAME,   KeyName,   KeyNull   );
+    ValueOk    := RoutineContext.ReadInputString( AStatus, TObjectToArrayFunction.INPUT_FIELD_VALUE_NAME, ValueName, ValueNull );
+
+    Result     := object_to_array( Json, KeyName, ValueName );
+    ResultNull := ( Result = '' );
+
+    ResultOk   := RoutineContext.WriteOutputString( AStatus, TObjectToArrayFunction.OUTPUT_FIELD_RESULT, Result, ResultNull );
+end;{ TObjectToArrayFunction.execute }
 
 
 procedure InitProc;

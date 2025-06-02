@@ -22,6 +22,17 @@ create or alter package json
 as begin
 
 procedure parse(
+    json        varchar(8191)      character set UTF8
+)returns(
+    source_type smallint
+  , number      integer
+  , key         varchar(8191)      character set UTF8
+  , value_      varchar(8191)      character set UTF8
+  , value_type  smallint
+)
+;
+
+procedure parse_blob(
     json        blob sub_type text character set UTF8
 )returns(
     source_type smallint
@@ -29,7 +40,8 @@ procedure parse(
   , key         varchar(8191)      character set UTF8
   , value_      blob sub_type text character set UTF8
   , value_type  smallint
-);
+)
+;
 
 function json_type(
     json_type smallint
@@ -68,6 +80,20 @@ function remove(
 )returns   blob sub_type text character set UTF8
 ;
 
+function array_to_object(
+    json       blob sub_type text character set UTF8
+  , key_name   varchar(8191)      character set UTF8
+  , value_name varchar(8191)      character set UTF8
+)returns       blob sub_type text character set UTF8
+;
+
+function object_to_array(
+    json       blob sub_type text character set UTF8
+  , key_name   varchar(8191)      character set UTF8
+  , value_name varchar(8191)      character set UTF8
+)returns       blob sub_type text character set UTF8
+;
+
 end^
 
 recreate package body json
@@ -75,6 +101,21 @@ as
 begin
 
 procedure parse(
+    json        varchar(8191)      character set UTF8
+)returns(
+    source_type smallint
+  , number      integer
+  , key         varchar(8191)      character set UTF8
+  , value_      varchar(8191)      character set UTF8
+  , value_type  smallint
+)
+external name
+    'fb_json!parse'
+engine
+    udr
+;
+
+procedure parse_blob(
     json        blob sub_type text character set UTF8
 )returns(
     source_type smallint
@@ -160,6 +201,28 @@ engine
     udr
 ;
 
+function array_to_object(
+    json       blob sub_type text character set UTF8
+  , key_name   varchar(8191)      character set UTF8
+  , value_name varchar(8191)      character set UTF8
+)returns       blob sub_type text character set UTF8
+external name
+    'fb_json!array_to_object'
+engine
+    udr
+;
+
+function object_to_array(
+    json       blob sub_type text character set UTF8
+  , key_name   varchar(8191)      character set UTF8
+  , value_name varchar(8191)      character set UTF8
+)returns       blob sub_type text character set UTF8
+external name
+    'fb_json!object_to_array'
+engine
+    udr
+;
+
 end^
 
 set term ;^
@@ -188,12 +251,14 @@ var
 
 function firebird_udr_plugin( AStatus:IStatus; AUnloadFlagLocal:BooleanPtr; AUdrPlugin:IUdrPlugin ):BooleanPtr; cdecl;
 begin
-    AUdrPlugin.registerProcedure( AStatus, 'parse',  fbjson.TParseProcedureFactory.Create() );
-    AUdrPlugin.registerFunction(  AStatus, 'encode', fbjson.TEncodeFunctionFactory.Create() );
-    AUdrPlugin.registerFunction(  AStatus, 'decode', fbjson.TDecodeFunctionFactory.Create() );
-    AUdrPlugin.registerFunction(  AStatus, 'append', fbjson.TAppendFunctionFactory.Create() );
-    AUdrPlugin.registerFunction(  AStatus, 'put',    fbjson.TPutFunctionFactory.Create()    );
-    AUdrPlugin.registerFunction(  AStatus, 'remove', fbjson.TRemoveFunctionFactory.Create() );
+    AUdrPlugin.registerProcedure( AStatus, 'parse',           fbjson.TParseProcedureFactory.Create()        );
+    AUdrPlugin.registerFunction(  AStatus, 'encode',          fbjson.TEncodeFunctionFactory.Create()        );
+    AUdrPlugin.registerFunction(  AStatus, 'decode',          fbjson.TDecodeFunctionFactory.Create()        );
+    AUdrPlugin.registerFunction(  AStatus, 'append',          fbjson.TAppendFunctionFactory.Create()        );
+    AUdrPlugin.registerFunction(  AStatus, 'put',             fbjson.TPutFunctionFactory.Create()           );
+    AUdrPlugin.registerFunction(  AStatus, 'remove',          fbjson.TRemoveFunctionFactory.Create()        );
+    AUdrPlugin.registerFunction(  AStatus, 'array_to_object', fbjson.TArrayToObjectFunctionFactory.Create() );
+    AUdrPlugin.registerFunction(  AStatus, 'object_to_array', fbjson.TObjectToArrayFunctionFactory.Create() );
 
     theirUnloadFlag := AUnloadFlagLocal;
     Result          := @myUnloadFlag;
