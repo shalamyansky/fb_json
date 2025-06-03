@@ -106,7 +106,7 @@ Removes pair from JSON object if found.
 This function accepts array like
 
 	[
-	    { "name": "propertyName1", "value": "propertyValue2" }
+	    { "name": "propertyName1", "value": "propertyValue1" }
 	  , { "name": "propertyName2", "value": "propertyValue2" }
 	]
 	  key_name = 'name', value_name = 'value'	
@@ -129,7 +129,7 @@ and converts it into object like
 Parses any JSON object onto array like
 
 	[
-	    { "name": "propertyName1", "value": "propertyValue2" }
+	    { "name": "propertyName1", "value": "propertyValue1" }
 	  , { "name": "propertyName2", "value": "propertyValue2" }
 	]
 	  key_name = 'name', value_name = 'value'	
@@ -342,5 +342,5 @@ Note: strings returned dequoted (decoded).
     ;
 
     OBJECT_TO_ARRAY
-    ======================================================
-    [ {"name":"a","value":"x"}, {"name":"b","value":"y"} ]
+    ===================================================
+    [{"name":"a","value":"x"},{"name":"b","value":"y"}]
