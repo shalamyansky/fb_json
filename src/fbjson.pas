@@ -696,6 +696,10 @@ begin
     ValueOk    := RoutineContext.ReadInputString(   AStatus, TAppendFunction.INPUT_FIELD_VALUE, Value, ValueNull );
     TypeOk     := RoutineContext.ReadInputSmallint( AStatus, TAppendFunction.INPUT_FIELD_TYPE,  Type_, TypeNull  );
 
+    if( ValueNull or TypeNull or ( Type_ = JSON_NONE ) )then begin
+        Type_ := JSON_NULL;
+    end;
+
     Result     := Append( Json, Key, Value, Type_ );
     ResultNull := ( Result = '' );
 
@@ -725,6 +729,10 @@ begin
     KeyOk      := RoutineContext.ReadInputString(   AStatus, TPutFunction.INPUT_FIELD_KEY,   Key,   KeyNull   );
     ValueOk    := RoutineContext.ReadInputString(   AStatus, TPutFunction.INPUT_FIELD_VALUE, Value, ValueNull );
     TypeOk     := RoutineContext.ReadInputSmallint( AStatus, TPutFunction.INPUT_FIELD_TYPE,  Type_, TypeNull  );
+
+    if( ValueNull or TypeNull or ( Type_ = JSON_NONE ) )then begin
+        Type_ := JSON_NULL;
+    end;
 
     Result     := put( Json, Key, Value, Type_ );
     ResultNull := ( Result = '' );
