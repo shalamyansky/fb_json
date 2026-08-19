@@ -1,7 +1,8 @@
-set term ^;
+set term ^ ;
 
 create or alter package json
-as begin
+as
+begin
 
 procedure parse(
     json        varchar(8191)      character set UTF8
@@ -40,12 +41,27 @@ function decode(
 )returns varchar(8191) character set UTF8
 ;
 
+procedure h_create(
+    json   varchar(8191) character set UTF8
+)returns(
+    handle bigint
+)
+;
+
 function append(
     json   varchar(8191) character set UTF8
   , key    varchar(8191) character set UTF8
   , value_ varchar(8191) character set UTF8
   , type_  smallint
 )returns   varchar(8191) character set UTF8
+;
+
+function h_append(
+    handle bigint
+  , key    varchar(8191) character set UTF8
+  , value_ varchar(8191) character set UTF8
+  , type_  smallint
+)returns   bigint
 ;
 
 function append_blob(
@@ -62,6 +78,14 @@ function put(
   , value_ varchar(8191) character set UTF8
   , type_  smallint
 )returns   varchar(8191) character set UTF8
+;
+
+function h_put(
+    handle bigint
+  , key    varchar(8191) character set UTF8
+  , value_ varchar(8191) character set UTF8
+  , type_  smallint
+)returns   bigint
 ;
 
 function put_blob(
@@ -110,6 +134,11 @@ function object_to_array_blob(
   , key_name   varchar(8191)      character set UTF8
   , value_name varchar(8191)      character set UTF8
 )returns       blob sub_type text character set UTF8
+;
+
+function h_serialize(
+    handle bigint
+)returns   varchar(8191) character set UTF8
 ;
 
 end^
@@ -185,12 +214,35 @@ engine
     udr
 ;
 
+procedure h_create(
+    json   varchar(8191) character set UTF8
+)returns(
+    handle bigint
+)
+external name
+    'fb_json!create'
+engine
+    udr
+;
+
 function append(
     json   varchar(8191) character set UTF8
   , key    varchar(8191) character set UTF8
   , value_ varchar(8191) character set UTF8
   , type_  smallint
 )returns   varchar(8191) character set UTF8
+external name
+    'fb_json!append'
+engine
+    udr
+;
+
+function h_append(
+    handle bigint
+  , key    varchar(8191) character set UTF8
+  , value_ varchar(8191) character set UTF8
+  , type_  smallint
+)returns   bigint
 external name
     'fb_json!append'
 engine
@@ -215,6 +267,18 @@ function put(
   , value_ varchar(8191) character set UTF8
   , type_  smallint
 )returns   varchar(8191) character set UTF8
+external name
+    'fb_json!put'
+engine
+    udr
+;
+
+function h_put(
+    handle bigint
+  , key    varchar(8191) character set UTF8
+  , value_ varchar(8191) character set UTF8
+  , type_  smallint
+)returns   bigint
 external name
     'fb_json!put'
 engine
@@ -297,6 +361,15 @@ engine
     udr
 ;
 
+function h_serialize(
+    handle bigint
+)returns   varchar(8191) character set UTF8
+external name
+    'fb_json!serialize'
+engine
+    udr
+;
+
 end^
 
-set term ;^
+set term ; ^

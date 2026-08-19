@@ -1,7 +1,8 @@
-set term ^;
+set term ^ ;
 
 create or alter package json
-as begin
+as
+begin
 
 procedure parse(
     json        varchar(32765)      character set WIN1251
@@ -40,12 +41,27 @@ function decode(
 )returns varchar(32765) character set WIN1251
 ;
 
+procedure h_create(
+    json   varchar(32765) character set WIN1251
+)returns(
+    handle bigint
+)
+;
+
 function append(
     json   varchar(32765) character set WIN1251
   , key    varchar(32765) character set WIN1251
   , value_ varchar(32765) character set WIN1251
   , type_  smallint
 )returns   varchar(32765) character set WIN1251
+;
+
+function h_append(
+    handle bigint
+  , key    varchar(32765) character set WIN1251
+  , value_ varchar(32765) character set WIN1251
+  , type_  smallint
+)returns   bigint
 ;
 
 function append_blob(
@@ -62,6 +78,14 @@ function put(
   , value_ varchar(32765) character set WIN1251
   , type_  smallint
 )returns   varchar(32765) character set WIN1251
+;
+
+function h_put(
+    handle bigint
+  , key    varchar(32765) character set WIN1251
+  , value_ varchar(32765) character set WIN1251
+  , type_  smallint
+)returns   bigint
 ;
 
 function put_blob(
@@ -110,6 +134,11 @@ function object_to_array_blob(
   , key_name   varchar(32765)     character set WIN1251
   , value_name varchar(32765)     character set WIN1251
 )returns       blob sub_type text character set WIN1251
+;
+
+function h_serialize(
+    handle bigint
+)returns   varchar(32765) character set WIN1251
 ;
 
 end^
@@ -185,12 +214,35 @@ engine
     udr
 ;
 
+procedure h_create(
+    json   varchar(32765) character set WIN1251
+)returns(
+    handle bigint
+)
+external name
+    'fb_json!create'
+engine
+    udr
+;
+
 function append(
     json   varchar(32765) character set WIN1251
   , key    varchar(32765) character set WIN1251
   , value_ varchar(32765) character set WIN1251
   , type_  smallint
 )returns   varchar(32765) character set WIN1251
+external name
+    'fb_json!append'
+engine
+    udr
+;
+
+function h_append(
+    handle bigint
+  , key    varchar(32765) character set WIN1251
+  , value_ varchar(32765) character set WIN1251
+  , type_  smallint
+)returns   bigint
 external name
     'fb_json!append'
 engine
@@ -215,6 +267,18 @@ function put(
   , value_ varchar(32765) character set WIN1251
   , type_  smallint
 )returns   varchar(32765) character set WIN1251
+external name
+    'fb_json!put'
+engine
+    udr
+;
+
+function h_put(
+    handle bigint
+  , key    varchar(32765) character set WIN1251
+  , value_ varchar(32765) character set WIN1251
+  , type_  smallint
+)returns   bigint
 external name
     'fb_json!put'
 engine
@@ -297,6 +361,15 @@ engine
     udr
 ;
 
+function h_serialize(
+    handle bigint
+)returns   varchar(32765) character set WIN1251
+external name
+    'fb_json!serialize'
+engine
+    udr
+;
+
 end^
 
-set term ;^
+set term ; ^

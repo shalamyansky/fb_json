@@ -31,6 +31,12 @@ const
 
 type
 
+TJsonParamType = (
+    JSON_PARAM_UNKNOWN
+  , JSON_PARAM_POINTER
+  , JSON_PARAM_STRING
+);{ TJsonParamType }
+
 { TParseProcedure }
 
 TParseProcedureFactory = class( TBwrProcedureFactory )
@@ -62,6 +68,34 @@ TParseResultSet = class( TBwrResultSet )
     function  fetch( AStatus:IStatus ):BOOLEAN; override;
     procedure ReleaseDoc;
 end;{ TParseResultSet }
+
+
+{ TCreateJsonProcedure }
+
+TCreateJsonProcedureFactory = class( TBwrProcedureFactory )
+  public
+    function newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalProcedure; override;
+end;{ TCreateJsonProcedureFactory }
+
+TCreateJsonProcedure = class( TBwrSelectiveProcedure )
+  const
+    INPUT_FIELD_JSON    = 0;
+    OUTPUT_FIELD_HANDLE = 0;
+  protected
+    class function GetBwrResultSetClass:TBwrResultSetClass; override;
+end;{ TCreateJsonProcedure }
+
+TCreateJsonResultSet = class( TBwrResultSet )
+  private
+    fSource  : TJSonValue;
+    fType    : SMALLINT;
+    fFetched : BOOLEAN;
+  public
+    constructor Create( ASelectiveProcedure:TBwrSelectiveProcedure; AStatus:IStatus; AContext:IExternalContext; AInMsg:POINTER; AOutMsg:POINTER ); override;
+    destructor  Destroy; override;
+    function    fetch( AStatus:IStatus ):BOOLEAN; override;
+    procedure   ReleaseDoc;
+end;{ TCreateJsonResultSet }
 
 
 { TEncodeFunction }
@@ -110,7 +144,10 @@ TAppendFunction = class( TBwrFunction )
     INPUT_FIELD_VALUE   = 2;
     INPUT_FIELD_TYPE    = 3;
     OUTPUT_FIELD_RESULT = 0;
+  private
+    fJsonParamType : TJsonParamType;
   public
+    constructor Create( AStatus:IStatus; RoutineMetadata:IRoutineMetadata ); virtual;
     procedure execute( AStatus:IStatus; AContext:IExternalContext; AInMsg:POINTER; AOutMsg:POINTER ); override;
 end;{ TAppendFunction }
 
@@ -129,9 +166,29 @@ TPutFunction = class( TBwrFunction )
     INPUT_FIELD_VALUE   = 2;
     INPUT_FIELD_TYPE    = 3;
     OUTPUT_FIELD_RESULT = 0;
+  private
+    fJsonParamType : TJsonParamType;
   public
+    constructor Create( AStatus:IStatus; RoutineMetadata:IRoutineMetadata ); virtual;
     procedure execute( AStatus:IStatus; AContext:IExternalContext; AInMsg:POINTER; AOutMsg:POINTER ); override;
 end;{ TPutFunction }
+
+
+{ TSerializeFunction }
+
+TSerializeFunctionFactory = class( TBwrFunctionFactory )
+  public
+    function newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalFunction; override;
+end;{ TSerializeFunctionFactory }
+
+TSerializeFunction = class( TBwrFunction )
+  const
+    INPUT_FIELD_JSON    = 0;
+    OUTPUT_FIELD_RESULT = 0;
+  public
+    procedure execute( AStatus:IStatus; AContext:IExternalContext; AInMsg:POINTER; AOutMsg:POINTER ); override;
+end;{ TSerializeFunction }
+
 
 
 { TRemoveFunction }
@@ -328,38 +385,60 @@ begin
     end;
 end;{ decode }
 
+function h_append( JsonValue:TJSonValue; Key, Value : UnicodeString; ValueType:SMALLINT ):BOOLEAN;
+var
+    ChildValue : TJSonValue;
+begin
+    Result := FALSE;
+    if( Key <> '' )then begin  //Json must be object
+        if( JsonValue is TJsonObject )then begin
+            try
+                ChildValue := nil;
+                ChildValue := CreateJsonValue( Value, ValueType );
+                if( ChildValue <> nil )then begin
+                    TJSonObject( JsonValue ).AddPair( Key, ChildValue );
+                    Result := TRUE;
+                end;
+            finally
+                if( not Result )then begin
+                    FreeAndNil( ChildValue );
+                end;
+            end;
+        end;
+    end else begin             //Json must be array
+        if( JsonValue is TJSonArray )then begin
+            try
+                ChildValue := nil;
+                ChildValue := CreateJsonValue( Value, ValueType );
+                if( ChildValue <> nil )then begin
+                    TJSonArray( JsonValue ).AddElement( ChildValue );
+                    Result := TRUE;
+                end;
+            finally
+                if( not Result )then begin
+                    FreeAndNil( ChildValue );
+                end;
+            end;
+        end;
+    end;
+end;{ h_append }
+
 function append( Json, Key, Value : UnicodeString; ValueType : SMALLINT ):UnicodeString;
 var
-    JsonValue, ChildValue  : TJSonValue;
+    JsonValue : TJSonValue;
 begin
     Result := Json;
     try
         JsonValue  := nil;
-        ChildValue := nil;
         if( Json <> '' )then begin
             JsonValue := TJsonValue.ParseJSONValue( Json );
-        end;
-        ChildValue := CreateJsonValue( Value, ValueType );
-        if( ChildValue <> nil )then begin
-            if( Key <> '' )then begin  //Json must be object
-                if( JsonValue = nil )then begin
-                    JsonValue := TJsonObject.Create;
-                end;
-                if( JsonValue is TJsonObject )then begin
-                    TJSonObject( JsonValue ).AddPair( Key, ChildValue );
-                end else begin
-                    FreeAndNil( ChildValue );
-                end;
-            end else begin             //Json must be array
-                if( JsonValue = nil )then begin
-                    JsonValue := TJsonArray.Create;
-                end;
-                if( JsonValue is TJSonArray )then begin
-                    TJSonArray( JsonValue ).AddElement( ChildValue );
-                end else begin
-                    FreeAndNil( ChildValue );
-                end;
+        end else begin
+            case Key = '' of
+                FALSE : JsonValue := TJsonObject.Create;
+                TRUE  : JsonValue := TJsonArray.Create;
             end;
+        end;
+        if( h_append( JsonValue, Key, Value, ValueType ) )then begin
             Result := ToString( JsonValue );
         end;
     finally
@@ -367,40 +446,57 @@ begin
     end;
 end;{ append }
 
-function put( Json, Key, Value : UnicodeString; ValueType : SMALLINT ):UnicodeString;
+function h_put( JsonValue:TJSonValue; Key, Value : UnicodeString; ValueType:SMALLINT ):BOOLEAN;
 var
-    JsonValue, ChildValue : TJSonValue;
-    Pair      : TJSonPair;
+    ChildValue   : TJSonValue;
+    Pair         : TJSonPair;
+    ChildApplied : BOOLEAN;
 begin
-    Result := Json;
+    Result       := FALSE;
+    ChildApplied := FALSE;
     if( Key = '' )then begin
         exit;
     end;
     try
-        JsonValue  := nil;
         ChildValue := nil;
-        if( Json <> '' )then begin
-            JsonValue := TJsonValue.ParseJSONValue( Json );
-        end;
         ChildValue := CreateJsonValue( Value, ValueType );
         if( ChildValue <> nil )then begin
-            if( JsonValue = nil )then begin
-                JsonValue := TJsonObject.Create;
-                TJSonObject( JsonValue ).AddPair( Key, ChildValue );
-                Result := ToString( JsonValue );
-            end else if( JsonValue is TJSonObject )then begin
+            if( JsonValue is TJSonObject )then begin
                 Pair := TJSonObject( JsonValue ).Get( Key );
                 if( Pair = nil )then begin
                     TJSonObject( JsonValue ).AddPair( Key, ChildValue );
                 end else begin
                     Pair.JsonValue := ChildValue;
                 end;
-                Result := ToString( JsonValue );
-            end else begin
-                FreeAndNil( ChildValue );
+                ChildApplied := TRUE;
+                Result       := TRUE;
             end;
-        end else if( JsonValue is TJSonObject )then begin
-            TJSonObject( JsonValue ).RemovePair( Key );
+        end else begin
+            if( JsonValue is TJSonObject )then begin
+                TJsonObject( JsonValue ).RemovePair( Key );
+                Result    := TRUE;
+            end;
+        end;
+    finally
+        if( not ChildApplied )then begin
+            FreeAndNil( ChildValue );
+        end;
+    end;
+end;{ h_put }
+
+function put( Json, Key, Value : UnicodeString; ValueType : SMALLINT ):UnicodeString;
+var
+    JsonValue : TJSonValue;
+begin
+    Result := Json;
+    try
+        JsonValue  := nil;
+        if( Json <> '' )then begin
+            JsonValue := TJsonValue.ParseJSONValue( Json );
+        end else begin
+            JsonValue := TJsonObject.Create;
+        end;
+        if( h_put( JsonValue, Key, Value, ValueType ) )then begin
             Result := ToString( JsonValue );
         end;
     finally
@@ -506,7 +602,6 @@ class function TParseProcedure.GetBwrResultSetClass:TBwrResultSetClass;
 begin
     Result := TParseResultSet;
 end;{ TParseProcedure.GetBwrResultSetClass }
-
 
 { TParseResultSet }
 
@@ -616,6 +711,81 @@ begin
 end;{ TParseResultSet.fetch }
 
 
+{ TCreateJsonProcedureFactory }
+
+function TCreateJsonProcedureFactory.newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalProcedure;
+begin
+    Result := TCreateJsonProcedure.create( AMetadata );
+end;{ TCreateJsonProcedureFactory.newItem }
+
+{ TCreateJsonProcedure }
+
+class function TCreateJsonProcedure.GetBwrResultSetClass:TBwrResultSetClass;
+begin
+    Result := TCreateJsonResultSet;
+end;{ TCreateJsonProcedure.GetBwrResultSetClass }
+
+{ TCreateJsonResultSet }
+
+constructor TCreateJsonResultSet.Create( ASelectiveProcedure:TBwrSelectiveProcedure; AStatus:IStatus; AContext:IExternalContext; AInMsg:POINTER; AOutMsg:POINTER );
+var
+    Json       : UnicodeString;
+    JsonNull   : WORDBOOL;
+    JsonOk     : BOOLEAN;
+begin
+    inherited Create( ASelectiveProcedure, AStatus, AContext, AInMsg, AOutMsg );
+    fSource  := nil;
+    fType    := JSON_NONE;
+    fFetched := FALSE;
+
+    JsonOk := RoutineContext.ReadInputString( AStatus, TCreateJsonProcedure.INPUT_FIELD_JSON, Json, JsonNull );
+    if( not JsonNull )then begin
+        Json := Trim( Json );
+    end;
+    if( Json <> '' )then begin
+        fSource := TJSonValue.ParseJSONValue( Json, True, True );
+    end else begin
+        fSource := TJsonObject.Create;
+    end;
+    fType := GetJsonType( fSource );
+end;{ TCreateJsonResultSet.Create }
+
+destructor TCreateJsonResultSet.Destroy;
+begin
+    ReleaseDoc;
+    inherited Destroy;
+end;{ TCreateJsonResultSet.Destroy; }
+
+procedure TCreateJsonResultSet.ReleaseDoc;
+begin
+    FreeAndNil( fSource );
+    fType    := JSON_NONE;
+    fFetched := TRUE;
+end;{ TCreateJsonResultSet.ReleaseDoc }
+
+function TCreateJsonResultSet.fetch( AStatus:IStatus ):BOOLEAN;
+var
+    Handle     : INT64;
+    HandleNull : WORDBOOL;
+    HandleOk   : BOOLEAN;
+begin
+    Result     := FALSE;
+    Handle     := -1;
+    HandleNull := TRUE;
+    HandleOk   := FALSE;
+    if( ( fSource <> nil ) and ( not fFetched ) )then begin
+        Handle     := INT64( POINTER( fSource ) );
+        HandleNull := FALSE;
+        fFetched   := TRUE;
+        Result     := TRUE;
+    end else begin
+        Result     := FALSE;
+        ReleaseDoc;
+    end;
+    HandleOk := RoutineContext.WriteOutputBigint( AStatus, TCreateJsonProcedure.OUTPUT_FIELD_HANDLE, Handle, HandleNull );
+end;{ TCreateJsonResultSet.fetch }
+
+
 { TEncodeFunction }
 
 function TEncodeFunctionFactory.newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalFunction;
@@ -676,22 +846,46 @@ end;{ TDecodeFunction.execute }
 
 function TAppendFunctionFactory.newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalFunction;
 begin
-    Result := TAppendFunction.create( AMetadata );
+    Result := TAppendFunction.create( AStatus, AMetadata );
 end;{ TAppendFunctionFactory.newItem }
+
+constructor TAppendFunction.Create( AStatus:IStatus; RoutineMetadata:IRoutineMetadata );
+var
+    InputType, OutputType : UINT64;
+begin
+    inherited Create( RoutineMetadata );
+
+    fJsonParamType := JSON_PARAM_UNKNOWN;
+    InputType  := TRoutineContext.GetFieldType( AStatus, INPUT_MESSAGE,  INPUT_FIELD_JSON,    RoutineMetadata );
+    OutputType := TRoutineContext.GetFieldType( AStatus, OUTPUT_MESSAGE, OUTPUT_FIELD_RESULT, RoutineMetadata );
+    if(
+            ( InputType  = FB_BIGINT )
+        and ( OutputType = FB_BIGINT )
+    )then begin
+        fJsonParamType := JSON_PARAM_POINTER;
+    end else if(
+            ( ( InputType  = FB_CHAR ) or ( InputType  = FB_VARCHAR ) or ( InputType  = FB_BLOB ) )
+        and ( ( OutputType = FB_CHAR ) or ( OutputType = FB_VARCHAR ) or ( OutputType = FB_BLOB ) )
+    )then begin
+        fJsonParamType := JSON_PARAM_STRING;
+    end;
+end;{ TAppendFunction.Create }
 
 procedure TAppendFunction.execute( AStatus:IStatus; AContext:IExternalContext; aInMsg:POINTER; aOutMsg:POINTER );
 var
-    Json,     Key,     Value,               Result     : UnicodeString;
-                                  Type_                : SMALLINT;
-    JsonNull, KeyNull, ValueNull, TypeNull, ResultNull : WORDBOOL;
-    JsonOk,   KeyOk,   ValueOk,   TypeOk,   ResultOk   : BOOLEAN;
+    Json,                 Key,     Value,               Result     : UnicodeString;
+              Handle                                               : INT64;
+              JsonValue                                            : TJsonValue absolute Handle;
+                                              Type_                : SMALLINT;
+    JsonNull, HandleNull, KeyNull, ValueNull, TypeNull, ResultNull : WORDBOOL;
+    JsonOk,   HandleOk,   KeyOk,   ValueOk,   TypeOk,   ResultOk   : BOOLEAN;
 begin
     inherited execute( AStatus, AContext, aInMsg, aOutMsg );
     System.Finalize( Json   );
+    Handle := 0;
     System.Finalize( Result );
     ResultNull := TRUE;
     ResultOk   := FALSE;
-    JsonOk     := RoutineContext.ReadInputString(   AStatus, TAppendFunction.INPUT_FIELD_JSON,  Json,  JsonNull  );
     KeyOk      := RoutineContext.ReadInputString(   AStatus, TAppendFunction.INPUT_FIELD_KEY,   Key,   KeyNull   );
     ValueOk    := RoutineContext.ReadInputString(   AStatus, TAppendFunction.INPUT_FIELD_VALUE, Value, ValueNull );
     TypeOk     := RoutineContext.ReadInputSmallint( AStatus, TAppendFunction.INPUT_FIELD_TYPE,  Type_, TypeNull  );
@@ -700,45 +894,131 @@ begin
         Type_ := JSON_NULL;
     end;
 
-    Result     := Append( Json, Key, Value, Type_ );
-    ResultNull := ( Result = '' );
+    case fJsonParamType of
+        JSON_PARAM_POINTER : begin
+            HandleOk   := RoutineContext.ReadInputBigint( AStatus, TAppendFunction.INPUT_FIELD_JSON, Handle, HandleNull );
+            HandleNull := TRUE; //for output
+            if( h_append( JsonValue, Key, Value, Type_ ) )then begin
+                HandleNull := ( POINTER( Handle ) = nil );
+            end;
+            Handle     := 0;
+            HandleNull := TRUE;
+            HandleOk   := RoutineContext.WriteOutputBigint( AStatus, TAppendFunction.OUTPUT_FIELD_RESULT, Handle, HandleNull );
+        end;
+        JSON_PARAM_STRING : begin
+            JsonOk     := RoutineContext.ReadInputString( AStatus, TAppendFunction.INPUT_FIELD_JSON, Json, JsonNull );
+            Result     := append( Json, Key, Value, Type_ );
+            ResultNull := ( Result = '' );
+            ResultOk   := RoutineContext.WriteOutputString( AStatus, TAppendFunction.OUTPUT_FIELD_RESULT, Result, ResultNull );
+        end;
+    end;
 
-    ResultOk := RoutineContext.WriteOutputString( AStatus, TAppendFunction.OUTPUT_FIELD_RESULT, Result, ResultNull );
 end;{ TAppendFunction.execute }
+
 
 { TPutFunction }
 
 function TPutFunctionFactory.newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalFunction;
 begin
-    Result := TPutFunction.create( AMetadata );
+    Result := TPutFunction.create( AStatus, AMetadata );
 end;{ TPutFunctionFactory.newItem }
+
+constructor TPutFunction.Create( AStatus:IStatus; RoutineMetadata:IRoutineMetadata );
+var
+    InputType, OutputType : UINT64;
+begin
+    inherited Create( RoutineMetadata );
+
+    fJsonParamType := JSON_PARAM_UNKNOWN;
+    InputType  := TRoutineContext.GetFieldType( AStatus, INPUT_MESSAGE,  INPUT_FIELD_JSON,    RoutineMetadata );
+    OutputType := TRoutineContext.GetFieldType( AStatus, OUTPUT_MESSAGE, OUTPUT_FIELD_RESULT, RoutineMetadata );
+    if(
+            ( InputType  = FB_BIGINT )
+        and ( OutputType = FB_BIGINT )
+    )then begin
+        fJsonParamType := JSON_PARAM_POINTER;
+    end else if(
+            ( ( InputType  = FB_CHAR ) or ( InputType  = FB_VARCHAR ) or ( InputType  = FB_BLOB ) )
+        and ( ( OutputType = FB_CHAR ) or ( OutputType = FB_VARCHAR ) or ( OutputType = FB_BLOB ) )
+    )then begin
+        fJsonParamType := JSON_PARAM_STRING;
+    end;
+end;{ TPutFunction.Create }
 
 procedure TPutFunction.execute( AStatus:IStatus; AContext:IExternalContext; aInMsg:POINTER; aOutMsg:POINTER );
 var
-    Json,     Key,     Value,               Result     : UnicodeString;
-                                  Type_                : SMALLINT;
-    JsonNull, KeyNull, ValueNull, TypeNull, ResultNull : WORDBOOL;
-    JsonOk,   KeyOk,   ValueOk,   TypeOk,   ResultOk   : BOOLEAN;
+    Json,                 Key,     Value,               Result     : UnicodeString;
+              Handle                                               : INT64;
+              JsonValue                                            : TJsonValue absolute Handle;
+                                              Type_                : SMALLINT;
+    JsonNull, HandleNull, KeyNull, ValueNull, TypeNull, ResultNull : WORDBOOL;
+    JsonOk,   HandleOk,   KeyOk,   ValueOk,   TypeOk,   ResultOk   : BOOLEAN;
 begin
     inherited execute( AStatus, AContext, aInMsg, aOutMsg );
     System.Finalize( Json   );
+    Handle := 0;
     System.Finalize( Result );
     ResultNull := TRUE;
     ResultOk   := FALSE;
-    JsonOk     := RoutineContext.ReadInputString(   AStatus, TPutFunction.INPUT_FIELD_JSON,  Json,  JsonNull  );
-    KeyOk      := RoutineContext.ReadInputString(   AStatus, TPutFunction.INPUT_FIELD_KEY,   Key,   KeyNull   );
-    ValueOk    := RoutineContext.ReadInputString(   AStatus, TPutFunction.INPUT_FIELD_VALUE, Value, ValueNull );
-    TypeOk     := RoutineContext.ReadInputSmallint( AStatus, TPutFunction.INPUT_FIELD_TYPE,  Type_, TypeNull  );
+    KeyOk      := RoutineContext.ReadInputString(   AStatus, TAppendFunction.INPUT_FIELD_KEY,   Key,   KeyNull   );
+    ValueOk    := RoutineContext.ReadInputString(   AStatus, TAppendFunction.INPUT_FIELD_VALUE, Value, ValueNull );
+    TypeOk     := RoutineContext.ReadInputSmallint( AStatus, TAppendFunction.INPUT_FIELD_TYPE,  Type_, TypeNull  );
 
     if( ValueNull or TypeNull or ( Type_ = JSON_NONE ) )then begin
         Type_ := JSON_NULL;
     end;
 
-    Result     := put( Json, Key, Value, Type_ );
+    case fJsonParamType of
+        JSON_PARAM_POINTER : begin
+            HandleOk   := RoutineContext.ReadInputBigint( AStatus, TAppendFunction.INPUT_FIELD_JSON, Handle, HandleNull );
+            HandleNull := TRUE; //for output
+            if( h_put( JsonValue, Key, Value, Type_ ) )then begin
+                HandleNull := ( POINTER( Handle ) = nil );
+            end;
+            Handle     := 0;
+            HandleNull := TRUE;
+            HandleOk   := RoutineContext.WriteOutputBigint( AStatus, TAppendFunction.OUTPUT_FIELD_RESULT, Handle, HandleNull );
+        end;
+        JSON_PARAM_STRING : begin
+            JsonOk     := RoutineContext.ReadInputString( AStatus, TAppendFunction.INPUT_FIELD_JSON, Json, JsonNull );
+            Result     := put( Json, Key, Value, Type_ );
+            ResultNull := ( Result = '' );
+            ResultOk   := RoutineContext.WriteOutputString( AStatus, TAppendFunction.OUTPUT_FIELD_RESULT, Result, ResultNull );
+        end;
+    end;
+
+end;{ TPutFunction.execute }
+
+
+{ TSerializeFunction }
+
+function TSerializeFunctionFactory.newItem( AStatus:IStatus; AContext:IExternalContext; AMetadata:IRoutineMetadata ):IExternalFunction;
+begin
+    Result := TSerializeFunction.create( AMetadata );
+end;{ TSerializeFunctionFactory.newItem }
+
+procedure TSerializeFunction.execute( AStatus:IStatus; AContext:IExternalContext; aInMsg:POINTER; aOutMsg:POINTER );
+var
+    Handle                 : INT64;
+                Result     : UnicodeString;
+    HandleNull, ResultNull : WORDBOOL;
+    HandleOk,   ResultOk   : BOOLEAN;
+begin
+    inherited execute( AStatus, AContext, aInMsg, aOutMsg );
+    Handle     := 0;
+    HandleNull := TRUE;
+    System.Finalize( Result );
+    ResultNull := TRUE;
+    ResultOk   := FALSE;
+    HandleOk   := RoutineContext.ReadInputBigint( AStatus, TSerializeFunction.INPUT_FIELD_JSON, Handle, HandleNull  );
+
+    if( HandleOk and ( not HandleNull ) and ( Handle <> 0 ) )then begin
+        Result := fbjson.ToString( TJsonValue( POINTER( Handle ) ) );
+    end;
     ResultNull := ( Result = '' );
 
-    ResultOk := RoutineContext.WriteOutputString( AStatus, TPutFunction.OUTPUT_FIELD_RESULT, Result, ResultNull );
-end;{ TPutFunction.execute }
+    ResultOk := RoutineContext.WriteOutputString( AStatus, TSerializeFunction.OUTPUT_FIELD_RESULT, Result, ResultNull );
+end;{ TSerializeFunction.execute }
 
 
 { TRemoveFunction }

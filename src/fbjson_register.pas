@@ -16,10 +16,11 @@
 *)
 //DDL definition
 (*
-set term ^;
+set term ^ ;
 
 create or alter package json
-as begin
+as
+begin
 
 procedure parse(
     json        varchar(8191)      character set UTF8
@@ -58,7 +59,30 @@ function decode(
 )returns varchar(8191) character set UTF8
 ;
 
+procedure h_create(
+    json   varchar(8191) character set UTF8
+)returns(
+    handle bigint
+)
+;
+
 function append(
+    json   varchar(8191) character set UTF8
+  , key    varchar(8191) character set UTF8
+  , value_ varchar(8191) character set UTF8
+  , type_  smallint
+)returns   varchar(8191) character set UTF8
+;
+
+function h_append(
+    handle bigint
+  , key    varchar(8191) character set UTF8
+  , value_ varchar(8191) character set UTF8
+  , type_  smallint
+)returns   bigint
+;
+
+function append_blob(
     json   blob sub_type text character set UTF8
   , key    varchar(8191)      character set UTF8
   , value_ blob sub_type text character set UTF8
@@ -67,6 +91,22 @@ function append(
 ;
 
 function put(
+    json   varchar(8191) character set UTF8
+  , key    varchar(8191) character set UTF8
+  , value_ varchar(8191) character set UTF8
+  , type_  smallint
+)returns   varchar(8191) character set UTF8
+;
+
+function h_put(
+    handle bigint
+  , key    varchar(8191) character set UTF8
+  , value_ varchar(8191) character set UTF8
+  , type_  smallint
+)returns   bigint
+;
+
+function put_blob(
     json   blob sub_type text character set UTF8
   , key    varchar(8191)      character set UTF8
   , value_ blob sub_type text character set UTF8
@@ -75,12 +115,25 @@ function put(
 ;
 
 function remove(
+    json   varchar(8191) character set UTF8
+  , key    varchar(8191) character set UTF8
+)returns   varchar(8191) character set UTF8
+;
+
+function remove_blob(
     json   blob sub_type text character set UTF8
   , key    varchar(8191)      character set UTF8
 )returns   blob sub_type text character set UTF8
 ;
 
 function array_to_object(
+    json       varchar(8191) character set UTF8
+  , key_name   varchar(8191) character set UTF8
+  , value_name varchar(8191) character set UTF8
+)returns       varchar(8191) character set UTF8
+;
+
+function array_to_object_blob(
     json       blob sub_type text character set UTF8
   , key_name   varchar(8191)      character set UTF8
   , value_name varchar(8191)      character set UTF8
@@ -88,10 +141,22 @@ function array_to_object(
 ;
 
 function object_to_array(
+    json       varchar(8191) character set UTF8
+  , key_name   varchar(8191) character set UTF8
+  , value_name varchar(8191) character set UTF8
+)returns       varchar(8191) character set UTF8
+;
+
+function object_to_array_blob(
     json       blob sub_type text character set UTF8
   , key_name   varchar(8191)      character set UTF8
   , value_name varchar(8191)      character set UTF8
 )returns       blob sub_type text character set UTF8
+;
+
+function h_serialize(
+    handle bigint
+)returns   varchar(8191) character set UTF8
 ;
 
 end^
@@ -167,7 +232,42 @@ engine
     udr
 ;
 
+procedure h_create(
+    json   varchar(8191) character set UTF8
+)returns(
+    handle bigint
+)
+external name
+    'fb_json!create'
+engine
+    udr
+;
+
 function append(
+    json   varchar(8191) character set UTF8
+  , key    varchar(8191) character set UTF8
+  , value_ varchar(8191) character set UTF8
+  , type_  smallint
+)returns   varchar(8191) character set UTF8
+external name
+    'fb_json!append'
+engine
+    udr
+;
+
+function h_append(
+    handle bigint
+  , key    varchar(8191) character set UTF8
+  , value_ varchar(8191) character set UTF8
+  , type_  smallint
+)returns   bigint
+external name
+    'fb_json!append'
+engine
+    udr
+;
+
+function append_blob(
     json   blob sub_type text character set UTF8
   , key    varchar(8191)      character set UTF8
   , value_ blob sub_type text character set UTF8
@@ -180,6 +280,30 @@ engine
 ;
 
 function put(
+    json   varchar(8191) character set UTF8
+  , key    varchar(8191) character set UTF8
+  , value_ varchar(8191) character set UTF8
+  , type_  smallint
+)returns   varchar(8191) character set UTF8
+external name
+    'fb_json!put'
+engine
+    udr
+;
+
+function h_put(
+    handle bigint
+  , key    varchar(8191) character set UTF8
+  , value_ varchar(8191) character set UTF8
+  , type_  smallint
+)returns   bigint
+external name
+    'fb_json!put'
+engine
+    udr
+;
+
+function put_blob(
     json   blob sub_type text character set UTF8
   , key    varchar(8191)      character set UTF8
   , value_ blob sub_type text character set UTF8
@@ -192,6 +316,16 @@ engine
 ;
 
 function remove(
+    json   varchar(8191) character set UTF8
+  , key    varchar(8191) character set UTF8
+)returns   varchar(8191) character set UTF8
+external name
+    'fb_json!remove'
+engine
+    udr
+;
+
+function remove_blob(
     json   blob sub_type text character set UTF8
   , key    varchar(8191)      character set UTF8
 )returns   blob sub_type text character set UTF8
@@ -202,6 +336,17 @@ engine
 ;
 
 function array_to_object(
+    json       varchar(8191) character set UTF8
+  , key_name   varchar(8191) character set UTF8
+  , value_name varchar(8191) character set UTF8
+)returns       varchar(8191) character set UTF8
+external name
+    'fb_json!array_to_object'
+engine
+    udr
+;
+
+function array_to_object_blob(
     json       blob sub_type text character set UTF8
   , key_name   varchar(8191)      character set UTF8
   , value_name varchar(8191)      character set UTF8
@@ -213,6 +358,17 @@ engine
 ;
 
 function object_to_array(
+    json       varchar(8191) character set UTF8
+  , key_name   varchar(8191) character set UTF8
+  , value_name varchar(8191) character set UTF8
+)returns       varchar(8191) character set UTF8
+external name
+    'fb_json!object_to_array'
+engine
+    udr
+;
+
+function object_to_array_blob(
     json       blob sub_type text character set UTF8
   , key_name   varchar(8191)      character set UTF8
   , value_name varchar(8191)      character set UTF8
@@ -223,9 +379,18 @@ engine
     udr
 ;
 
+function h_serialize(
+    handle bigint
+)returns   varchar(8191) character set UTF8
+external name
+    'fb_json!serialize'
+engine
+    udr
+;
+
 end^
 
-set term ;^
+set term ; ^
 *)
 unit fbjson_register;
 
@@ -252,6 +417,7 @@ var
 function firebird_udr_plugin( AStatus:IStatus; AUnloadFlagLocal:BooleanPtr; AUdrPlugin:IUdrPlugin ):BooleanPtr; cdecl;
 begin
     AUdrPlugin.registerProcedure( AStatus, 'parse',           fbjson.TParseProcedureFactory.Create()        );
+    AUdrPlugin.registerProcedure( AStatus, 'create',          fbjson.TCreateJsonProcedureFactory.Create()   );
     AUdrPlugin.registerFunction(  AStatus, 'encode',          fbjson.TEncodeFunctionFactory.Create()        );
     AUdrPlugin.registerFunction(  AStatus, 'decode',          fbjson.TDecodeFunctionFactory.Create()        );
     AUdrPlugin.registerFunction(  AStatus, 'append',          fbjson.TAppendFunctionFactory.Create()        );
@@ -259,6 +425,7 @@ begin
     AUdrPlugin.registerFunction(  AStatus, 'remove',          fbjson.TRemoveFunctionFactory.Create()        );
     AUdrPlugin.registerFunction(  AStatus, 'array_to_object', fbjson.TArrayToObjectFunctionFactory.Create() );
     AUdrPlugin.registerFunction(  AStatus, 'object_to_array', fbjson.TObjectToArrayFunctionFactory.Create() );
+    AUdrPlugin.registerFunction(  AStatus, 'serialize',       fbjson.TSerializeFunctionFactory.Create()     );
 
     theirUnloadFlag := AUnloadFlagLocal;
     Result          := @myUnloadFlag;

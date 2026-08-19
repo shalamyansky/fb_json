@@ -33,6 +33,25 @@ Routines are assembled into package ***json***. Pseudotype ***string*** marks an
 
 This selective procedure returns a set of pairs or items, depending on the source type (object or array). For simple sources (null, bool, number, string) it returns single record.
 
+## procedure h_create
+
+    procedure h_create(
+        json   string
+    )returns(
+        handle bigint
+    );
+
+This selective procedure creates inner JSON node by parsing **json** input parameter and returns its handle at single fetch iteration. **json** must be object or array or null. If null an empty object will be created.
+The handle can only be used by **h_append**, **h_put** and **h_serialize** functions during fetch iteration. Using handle out this context or with another target is unsafe.
+
+## function h_serialize
+
+		function h_serialize(
+		    handle bigint
+		)returns   string;
+
+This function returns JSON text representation of inner node given by its handle. Have to be called exclusivly at handle node lifetime during **h_create** procedure single fetch.
+ 
 ## function json_type
 
     function json_type(
@@ -47,7 +66,7 @@ Auxiliary PSQL function for viewing a string description of a type.
         str  string
     )returns string;
   
-Converts string into JSON string. I.e. quoted it, escapes inner quotas etc.
+Converts string into JSON string. I.e. quotes it, escapes inner quotas etc.
 
 ## function decode
 
@@ -55,7 +74,7 @@ Converts string into JSON string. I.e. quoted it, escapes inner quotas etc.
         str  string
     )returns string;
   
-Converts JSON string into common string. I.e. unquoted it and clear inner escapes.
+Converts JSON string into common string. I.e. unquotes it and clears inner escapes.
 
 ## function append
 
@@ -66,12 +85,24 @@ Converts JSON string into common string. I.e. unquoted it and clear inner escape
       , type_  smallint -- value type
     )returns   string;  -- enhanced JSON 
 
-    
 Appends a new pair or item to the JSON string. The ***json*** must be an object or an array or null or empty. If null or empty new object or array is created depending on key presents.
 
 If ***value*** is not conform ***type*** it is ignored.
 
 Note! You can use this function to add multiple pairs with the same key. The JSON standard does not require the key to be unique.
+
+## function h_append
+
+    function h_append(
+        handle bigint   -- JSON node handle
+      , key    string   -- new pair key 
+      , value_ string   -- new pair (item) value
+      , type_  smallint -- value type
+    )returns   bigint;  -- JSON node handle 
+
+This is handle analog of **append** function. Does nothing if handle is 0. Always returns null.
+
+Note! Functions **h_append** and **append** have the same entry point in the binary module fb_json. The difference is in SQL definitions only.
 
 ## function put
 
@@ -85,6 +116,19 @@ Note! You can use this function to add multiple pairs with the same key. The JSO
 Updates JSON object pair or inserts new pair if not found. The ***json*** must be an object or null or empty. If null or empty new object is created. The ***key*** must not be null or empty.
 
 If ***type*** does not match ***value*** (e.g. ***type=0*** ) the pair is removed.
+
+## function h_put
+
+    function h_append(
+        handle bigint   -- JSON node handle
+      , key    string   -- pair key 
+      , value_ string   -- new pair value
+      , type_  smallint -- value type
+    )returns   bigint;  -- JSON node handle 
+
+This is handle analog of **put** function. Does nothing if handle is 0. Always returns null.
+
+Note! Functions **h_put** and **put** have the same entry point in the binary module fb_json. The difference is in SQL definitions only.
 
 ## function remove
 
@@ -344,3 +388,87 @@ Note: strings returned dequoted (decoded).
     OBJECT_TO_ARRAY
     ===================================================
     [{"name":"a","value":"x"},{"name":"b","value":"y"}]
+
+**Make address JSON object by set of parameters**
+
+		select
+		    coalesce(
+		        json.h_append( handle, 'zipcode',  :zipcode,  3 )
+		      , json.h_append( handle, 'region',   :region,   3 )
+		      , json.h_append( handle, 'city',     :city,     4 )
+		      , json.h_append( handle, 'street',   :street,   4 )
+		      , json.h_append( handle, 'building', :building, 4 )
+		      , json.h_serialize( handle )
+		    ) as address
+		  from
+		    json.h_create( null )
+
+    ADDRESS
+    ===================================================
+    {"zipcode":666666,"region":77,"city":"Москва","street":"пр-т Ленинский","building":"15"}
+
+**Make JSON array book list from table BOOKS**
+
+		create function make_book_list()
+		returns varchar(8191)
+		as
+		    declare variable result varchar(8191);
+		    declare variable h_list bigint;
+		    declare variable author varchar(100);
+		    declare variable title  varchar(100);
+		    declare variable book   varchar(100);
+		begin
+		
+		    for select
+		        handle
+		      from
+		        json.h_create( '[]' )
+		      into
+		        :h_list
+		    do begin
+		
+		        for select
+		              author
+		            , title
+		          from
+		            books
+		          into
+		              :author
+		            , :title
+		        do begin
+		
+		            :book = '{}';
+		            :book = json.append( :book, 'author', author, 4 );
+		            :book = json.append( :book, 'title',  title,  4 );
+		
+		            json.h_append( :h_list, null, :book, 6 );
+		
+		        end
+		
+		        :result = json.h_serialize( h_list );
+		    end
+		
+		    return :result;
+		end
+
+		select
+		    make_book_list() as booklist
+		  from
+		    rdb$database
+
+    BOOKLIST
+    ===================================================
+    [
+      {
+        "author" : "Helen Borrie",
+        "title" : "The Firebird Book: A Reference for Database Developers"
+      },
+      {
+        "author" : "Ковязин Алексей Н., Востриков Сергей М.",
+        "title" : "Мир InterBase"
+      },
+      {
+        "author" : "Denis Simonov",
+        "title" : "Firebird UDR writing in Pascal"
+      }
+    ]
